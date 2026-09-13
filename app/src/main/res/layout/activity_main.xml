@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
     android:orientation="vertical"
     android:padding="12dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <Button android:id="@+id/scan" android:text="SCAN BLE" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    <Button android:id="@+id/scan" android:text="SCAN + CONNECT + AE02 NOTIFY" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    <LinearLayout android:orientation="horizontal" android:layout_width="match_parent" android:layout_height="wrap_content">
+        <EditText android:id="@+id/hex_input" android:hint="HEX: AA 01 00" android:singleLine="true" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"/>
+        <Button android:id="@+id/tx_button" android:text="TX AE01" android:enabled="false" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+    </LinearLayout>
     <TextView android:id="@+id/status" android:text="Hazır" android:textSize="16sp" android:padding="8dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
     <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
         <TextView android:id="@+id/log" android:textSize="12sp" android:fontFamily="monospace" android:layout_width="match_parent" android:layout_height="wrap_content"/>
