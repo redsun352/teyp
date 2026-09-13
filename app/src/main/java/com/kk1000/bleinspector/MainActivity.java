@@ -28,7 +28,7 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle b){
         super.onCreate(b);setContentView(R.layout.activity_main);
         log=findViewById(R.id.log);status=findViewById(R.id.status);
-        Button btn=findViewById(R.id.scan);btn.setText("SCAN + CONNECT + AE02 NOTIFY");btn.setOnClickListener(v->startScan());
+        Button btn=findViewById(R.id.scan);btn.setText("SCAN + CONNECT + AE02 NOTIFY + READ");btn.setOnClickListener(v->startScan());
         BluetoothManager bm=(BluetoothManager)getSystemService(BLUETOOTH_SERVICE);adapter=bm.getAdapter();
         if(Build.VERSION.SDK_INT>=31&&checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN)!=PackageManager.PERMISSION_GRANTED)
             requestPermissions(new String[]{Manifest.permission.BLUETOOTH_SCAN,Manifest.permission.BLUETOOTH_CONNECT},10);
@@ -65,8 +65,9 @@ public class MainActivity extends Activity {
             p("=== GATT SERVICES ===");
             for(BluetoothGattService svc:g.getServices()){p("SERVICE: "+svc.getUuid());for(BluetoothGattCharacteristic c:svc.getCharacteristics())p("  CHAR: "+c.getUuid()+" props="+props(c.getProperties()));}
             BluetoothGattService svc=g.getService(AE00);if(svc!=null){rxChar=svc.getCharacteristic(AE02);txChar=svc.getCharacteristic(AE01);if(rxChar!=null){p("AE02 NOTIFY: enabling...");enableNotify(g,rxChar);}if(txChar!=null)p("AE01 TX: WRITE_NO_RESPONSE ready");}
+            // KK-1000 has no READ property on AE02; we intentionally do not probe or write arbitrary DSP commands.
         }
-        @Override public void onDescriptorWrite(BluetoothGatt g,BluetoothGattDescriptor d,int st){p("CCCD WRITE status="+st);}
+        @Override public void onDescriptorWrite(BluetoothGatt g,BluetoothGattDescriptor d,int st){p("CCCD WRITE status="+st);if(st==BluetoothGatt.GATT_SUCCESS)p("AE02 NOTIFY ACTIVE - now use the head unit/app to generate traffic.");}
         @Override public void onCharacteristicChanged(BluetoothGatt g,BluetoothGattCharacteristic c){byte[] v=c.getValue();p("RX "+c.getUuid()+" = "+hex(v)+" | ASCII="+ascii(v));}
         @Override public void onCharacteristicWrite(BluetoothGatt g,BluetoothGattCharacteristic c,int st){p("TX DONE "+c.getUuid()+" status="+st);}
         @Override public void onCharacteristicRead(BluetoothGatt g,BluetoothGattCharacteristic c,int st){p("READ "+c.getUuid()+" status="+st+" = "+hex(c.getValue()));}
