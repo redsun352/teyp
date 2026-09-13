@@ -11,23 +11,20 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class MainActivity extends Activity {
-    private TextView log, status;
+    private TextView log,status;
     private BluetoothAdapter adapter;
     private BluetoothLeScanner scanner;
     private BluetoothGatt gatt;
-    private BluetoothGattCharacteristic txChar;
-    private BluetoothGattCharacteristic rxChar;
-    private final Handler handler = new Handler(Looper.getMainLooper());
-    private final StringBuilder out = new StringBuilder();
+    private BluetoothGattCharacteristic txChar,rxChar;
+    private final Handler handler=new Handler(Looper.getMainLooper());
+    private final StringBuilder out=new StringBuilder();
     private boolean scanRunning;
-
     private static final UUID AE00=UUID.fromString("0000ae00-0000-1000-8000-00805f9b34fb");
     private static final UUID AE01=UUID.fromString("0000ae01-0000-1000-8000-00805f9b34fb");
     private static final UUID AE02=UUID.fromString("0000ae02-0000-1000-8000-00805f9b34fb");
     private static final UUID CCCD=UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
 
     private void p(String s){runOnUiThread(()->{out.append(s).append('\n');log.setText(out.toString());});}
-
     @Override public void onCreate(Bundle b){
         super.onCreate(b);setContentView(R.layout.activity_main);
         log=findViewById(R.id.log);status=findViewById(R.id.status);
@@ -36,7 +33,6 @@ public class MainActivity extends Activity {
         if(Build.VERSION.SDK_INT>=31&&checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN)!=PackageManager.PERMISSION_GRANTED)
             requestPermissions(new String[]{Manifest.permission.BLUETOOTH_SCAN,Manifest.permission.BLUETOOTH_CONNECT},10);
     }
-
     private void startScan(){
         if(adapter==null||!adapter.isEnabled()){status.setText("Bluetooth'u aç.");return;}
         if(gatt!=null){try{gatt.close();}catch(Exception ignored){}gatt=null;}
@@ -45,7 +41,6 @@ public class MainActivity extends Activity {
         scanRunning=true;scanner.startScan(scanCallback);
         handler.postDelayed(()->{if(scanRunning){scanRunning=false;try{scanner.stopScan(scanCallback);}catch(Exception ignored){}p("=== SCAN BİTTİ ===");}},15000);
     }
-
     private final ScanCallback scanCallback=new ScanCallback(){
         @Override public void onScanResult(int type,ScanResult r){
             BluetoothDevice d=r.getDevice();ScanRecord s=r.getScanRecord();String name=s!=null?s.getDeviceName():null;
@@ -56,14 +51,12 @@ public class MainActivity extends Activity {
         }
         @Override public void onScanFailed(int e){p("SCAN FAILED: "+e);}
     };
-
     private void connect(BluetoothDevice d){
         if(scanRunning){scanRunning=false;try{scanner.stopScan(scanCallback);}catch(Exception ignored){}}
         p(">>> GATT CONNECT: "+d.getAddress());status.setText("KK-1000 bağlanıyor...");
         if(Build.VERSION.SDK_INT>=31&&checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)!=PackageManager.PERMISSION_GRANTED)return;
         try{gatt=d.connectGatt(this,false,gattCallback,BluetoothDevice.TRANSPORT_LE);}catch(Exception e){p("CONNECT ERROR: "+e.getMessage());}
     }
-
     private final BluetoothGattCallback gattCallback=new BluetoothGattCallback(){
         @Override public void onConnectionStateChange(BluetoothGatt g,int st,int ns){
             p("GATT STATE: "+ns+" status="+st);if(ns==BluetoothProfile.STATE_CONNECTED){gatt=g;status.setText("Bağlandı; servisler aranıyor");p(">>> discoverServices()");g.discoverServices();}else if(ns==BluetoothProfile.STATE_DISCONNECTED)status.setText("Bağlantı kesildi");
@@ -71,19 +64,13 @@ public class MainActivity extends Activity {
         @Override public void onServicesDiscovered(BluetoothGatt g,int st){
             p("=== GATT SERVICES ===");
             for(BluetoothGattService svc:g.getServices()){p("SERVICE: "+svc.getUuid());for(BluetoothGattCharacteristic c:svc.getCharacteristics())p("  CHAR: "+c.getUuid()+" props="+props(c.getProperties()));}
-            BluetoothGattService svc=g.getService(AE00);
-            if(svc!=null){
-                rxChar=svc.getCharacteristic(AE02);txChar=svc.getCharacteristic(AE01);
-                if(rxChar!=null){p("AE02 NOTIFY: enabling...");enableNotify(g,rxChar);}
-                if(txChar!=null)p("AE01 TX: WRITE_NO_RESPONSE ready");
-            }
+            BluetoothGattService svc=g.getService(AE00);if(svc!=null){rxChar=svc.getCharacteristic(AE02);txChar=svc.getCharacteristic(AE01);if(rxChar!=null){p("AE02 NOTIFY: enabling...");enableNotify(g,rxChar);}if(txChar!=null)p("AE01 TX: WRITE_NO_RESPONSE ready");}
         }
         @Override public void onDescriptorWrite(BluetoothGatt g,BluetoothGattDescriptor d,int st){p("CCCD WRITE status="+st);}
         @Override public void onCharacteristicChanged(BluetoothGatt g,BluetoothGattCharacteristic c){byte[] v=c.getValue();p("RX "+c.getUuid()+" = "+hex(v)+" | ASCII="+ascii(v));}
         @Override public void onCharacteristicWrite(BluetoothGatt g,BluetoothGattCharacteristic c,int st){p("TX DONE "+c.getUuid()+" status="+st);}
         @Override public void onCharacteristicRead(BluetoothGatt g,BluetoothGattCharacteristic c,int st){p("READ "+c.getUuid()+" status="+st+" = "+hex(c.getValue()));}
     };
-
     private void enableNotify(BluetoothGatt g,BluetoothGattCharacteristic c){
         if(!g.setCharacteristicNotification(c,true)){p("AE02 notification enable failed");return;}
         BluetoothGattDescriptor d=c.getDescriptor(CCCD);if(d==null){p("AE02 CCCD bulunamadı");return;}
