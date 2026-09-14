@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.os.*;
 import android.bluetooth.*;
+import android.bluetooth.le.BluetoothLeScanner;
 import android.content.pm.PackageManager;
 import android.view.*;
 import android.widget.*;
